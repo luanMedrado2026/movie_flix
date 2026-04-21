@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>MovieFlix</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    body {
+      margin: 0;
+      background: linear-gradient(135deg, #141e30, #243b55);
+      color: white;
+      padding: 20px;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    .container {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 20px;
+    }
+    
+    .card {
+      background: #1f2a3a;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+    }
+
+    input {
+      width: 100%;
+      padding: 10px;
+      margin-top: 10px;
+      border-radius: 8px;
+      border: none;
+      outline: none;
+    }
+
+    button {
+      width: 100%;
+      margin-top: 10px;
+      padding: 10px;
+      border: none;
+      border-radius: 8px;
+      background: #00c6ff;
+      color: black;
+      font-weight: bold;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+
+    button:hover {
+      background: #0072ff;
+      color: white;
+    }
+
+    .list {
+      margin-top: 15px;
+    }
+
+    .item {
+      background: #2c3e50;
+      padding: 10px;
+      border-radius: 8px;
+      margin-top: 8px;
+    }
+  </style>
+</head>
+
+<body>
+
+<h1>🎬 MovieFlix Dashboard</h1>
+
+<div class="container">
+
+  <div class="card">
+    <h2>👤 Usuários</h2>
+    <input id="userName" placeholder="Nome do usuário">
+    <button onclick="createUser()">Cadastrar</button>
+    <div id="usersList" class="list"></div>
+  </div>
+
+  <div class="card">
+    <h2>🎬 Filmes</h2>
+    <input id="movieTitle" placeholder="Título">
+    <input id="movieGenre" placeholder="Gênero">
+    <button onclick="createMovie()">Cadastrar</button>
+    <div id="moviesList" class="list"></div>
+  </div>
+
+  <div class="card">
+    <h2>⭐ Avaliações</h2>
+    <input id="userId" placeholder="ID Usuário">
+    <input id="movieId" placeholder="ID Filme">
+    <input id="rating" placeholder="Nota (1-5)">
+    <button onclick="createRating()">Avaliar</button>
+  </div>
+
+  <div class="card">
+    <h2>🏆 Top Filmes</h2>
+    <button onclick="loadTop()">Carregar Ranking</button>
+    <div id="topMovies" class="list"></div>
+  </div>
+
+</div>
+<script>
+const API = '/api';
+
+async function createUser() {
+  const name = document.getElementById('userName').value;
+  await fetch(API + '/users', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name })
+  });
+  loadUsers();
+}
+
+async function loadUsers() {
+  const res = await fetch(API + '/users');
+  const data = await res.json();
+
+  const div = document.getElementById('usersList');
+  div.innerHTML = '';
+
+  data.forEach(u => {
+    div.innerHTML += `<div class="item">ID: ${u.id} - ${u.name}</div>`;
+  });
+}
+
+async function createMovie() {
+  const title = document.getElementById('movieTitle').value;
+  const genre = document.getElementById('movieGenre').value;
+
+  await fetch(API + '/movies', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ title, genre })
+  });
+
+  loadMovies();
+}
+async function loadMovies() {
+  const res = await fetch(API + '/movies');
+  const data = await res.json();
+
+  const div = document.getElementById('moviesList');
+  div.innerHTML = '';
+
+  data.forEach(m => {
+    div.innerHTML += `<div class="item">ID: ${m.id} - ${m.title} (${m.genre})</div>`;
+  });
+}
+
+async function createRating() {
+  const user_id = document.getElementById('userId').value;
+  const movie_id = document.getElementById('movieId').value;
+  const rating = document.getElementById('rating').value;
+
+  await fetch(API + '/ratings', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ user_id, movie_id, rating })
+  });
+
+  alert('Avaliação enviada!');
+}
+
+async function loadTop() {
+  const res = await fetch(API + '/ratings/top');
+  const data = await res.json();
+
+  const div = document.getElementById('topMovies');
+  div.innerHTML = '';
+
+  data.forEach(movie => {
+    div.innerHTML += `
+      <div class="item">
+        <b>${movie.title}</b><br>
+        ⭐ Média: ${Number(movie.avg_rating).toFixed(2)}
+      </div>
+    `;
+  });
+}
+// carregar dados iniciais
+loadUsers();
+loadMovies();
+
+</script>
+
+</body>
+</html>
