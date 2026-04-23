@@ -1,1 +1,339 @@
-Segunda versão readme
+# 🎬 MovieFlix Data Platform
+
+## 📌 Visão Geral
+
+Este projeto implementa uma arquitetura completa de dados baseada em:
+
+* **Data Lake**
+* **ETL (Extract, Transform, Load)**
+* **Data Warehouse (Star Schema)**
+* **Data Mart (Views Analíticas)**
+
+O objetivo é simular um cenário real de engenharia de dados, onde dados brutos são processados e transformados em informações úteis para análise de negócio.
+
+---
+
+# 🏗️ Arquitetura do Sistema
+
+```
+            ┌────────────────────┐
+            │    Data Lake       │
+            │   (CSV Files)      │
+            └────────┬───────────┘
+                     │
+                     │ Extract
+                     ▼
+            ┌────────────────────┐
+            │       ETL          │
+            │  (Node.js Script)  │
+            └────────┬───────────┘
+                     │ Transform
+                     ▼
+            ┌────────────────────┐
+            │   Data Warehouse   │
+            │   (PostgreSQL)     │
+            └────────┬───────────┘
+                     │
+                     │ Data Mart
+                     ▼
+            ┌────────────────────┐
+            │   Views / BI       │
+            │  (Consultas SQL)   │
+            └────────────────────┘
+```
+
+---
+
+# 📂 Estrutura do Projeto
+
+```
+movie_flix/
+│
+├── data_lake/
+│   ├── users.csv
+│   ├── movies.csv
+│   └── ratings.csv
+│
+├── data_warehouse/
+│   ├── init.sql
+│   └── datamart.sql
+│
+├── etl/
+│   ├── db.js
+│   ├── loadUsers.js
+│   ├── loadMovies.js
+│   ├── loadRatings.js
+│   └── loadAll.js
+│
+├── docker-compose.yml
+├── nginx/
+├── frontend/
+└── app/
+```
+
+---
+
+# 📦 Data Lake
+
+O Data Lake é composto por arquivos CSV contendo dados brutos:
+
+### 👤 users.csv
+
+* user_id
+* name
+* email
+
+### 🎬 movies.csv
+
+* movie_id
+* title
+* year
+* genre
+* director
+
+### ⭐ ratings.csv
+
+* user_id
+* movie_id
+* rating
+* timestamp
+
+📌 Características:
+
+* Dados não tratados
+* Estrutura simples
+* Fonte de verdade inicial
+
+---
+
+# ⚙️ ETL (Extract, Transform, Load)
+
+O processo ETL é responsável por:
+
+## 🔹 Extract
+
+Leitura dos arquivos CSV utilizando `csv-parser`.
+
+## 🔹 Transform
+
+* Conversão de tipos (`parseInt`)
+* Tratamento de valores inválidos (`NaN`)
+* Normalização de datas
+* Criação de dimensões (ex: `dim_date`)
+
+## 🔹 Load
+
+Inserção dos dados no Data Warehouse com:
+
+* `INSERT`
+* `ON CONFLICT DO NOTHING`
+
+📌 Importante:
+O ETL foi implementado de forma **sequencial**, evitando concorrência no client do PostgreSQL.
+
+---
+
+# 🏗️ Data Warehouse
+
+O Data Warehouse utiliza **modelagem dimensional (Star Schema)**.
+
+## 📊 Tabela Fato
+
+### `fact_ratings`
+
+* user_id
+* movie_id
+* rating
+* date_id
+
+👉 Armazena eventos (avaliações)
+
+---
+
+## 📐 Tabelas Dimensão
+
+### `dim_users`
+
+* user_id
+* name
+* email
+
+### `dim_movies`
+
+* movie_id
+* title
+* year
+* genre
+* director
+
+### `dim_date`
+
+* date_id
+* full_date
+* year
+* month
+* day
+
+---
+
+## ⭐ Star Schema
+
+```
+          dim_users
+              │
+              │
+dim_movies ─ fact_ratings ─ dim_date
+```
+
+---
+
+# 📊 Data Mart
+
+O Data Mart é composto por **views analíticas** criadas a partir do DW.
+
+Exemplos:
+
+### 🎬 Top filmes
+
+```sql
+SELECT * FROM vw_top_filmes;
+```
+
+### ⭐ Média de avaliações
+
+```sql
+SELECT * FROM vw_media_filmes;
+```
+
+### 📅 Avaliações por dia
+
+```sql
+SELECT * FROM vw_avaliacoes_por_dia;
+```
+
+📌 Benefícios:
+
+* Queries mais rápidas
+* Reutilização
+* Foco no negócio
+
+---
+
+# 🔎 Consultas Analíticas
+
+O sistema permite responder perguntas como:
+
+### 🥇 Top 5 filmes mais populares
+
+```sql
+SELECT ...
+```
+
+### ⭐ Melhor gênero
+
+```sql
+SELECT ...
+```
+
+### 👤 Usuários mais ativos
+
+```sql
+SELECT ...
+```
+
+---
+
+# 🐳 Docker e Orquestração
+
+O projeto utiliza Docker para isolar os serviços:
+
+## Serviços:
+
+### 🗄️ postgres_oltp
+
+Banco transacional do sistema
+
+### 🏗️ postgres_dw
+
+Banco analítico (Data Warehouse)
+
+### ⚙️ etl_service
+
+Processamento ETL automatizado
+
+### 🌐 app
+
+Aplicação backend Node.js
+
+### 🌍 nginx
+
+Servidor web para frontend
+
+---
+
+# 🔄 Fluxo de Execução
+
+1. Docker sobe os containers
+2. PostgreSQL inicializa (`init.sql`)
+3. ETL executa automaticamente
+4. Dados são carregados no DW
+5. Data Mart pode ser criado (`datamart.sql`)
+6. Queries analíticas são executadas
+
+---
+
+# 🧪 Como Executar
+
+```bash
+docker-compose up --build
+```
+
+---
+
+# 📊 Executar Data Mart
+
+```powershell
+Get-Content .\data_warehouse\datamart.sql | docker exec -i postgres_dw psql -U postgres -d movieflix_dw
+```
+
+---
+
+# 🔍 Validação
+
+```sql
+SELECT COUNT(*) FROM dim_users;
+SELECT COUNT(*) FROM dim_movies;
+SELECT COUNT(*) FROM fact_ratings;
+```
+
+---
+
+# 🎯 Conclusão
+
+Este projeto demonstra:
+
+* Construção de um Data Lake
+* Implementação de ETL
+* Modelagem de Data Warehouse
+* Criação de Data Marts
+* Execução de análises de negócio
+
+📌 Representa um pipeline completo de engenharia de dados em ambiente containerizado.
+
+---
+
+# 🚀 Possíveis Evoluções
+
+* Dashboard (Power BI / Metabase)
+* Automação com Airflow
+* Incremental load
+* API analítica
+* Machine Learning sobre os dados
+
+---
+
+# 👨‍💻 Autor
+
+Luan Medrado Moreira
+
+Projeto acadêmico desenvolvido para simular um ambiente real de engenharia de dados.

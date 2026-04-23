@@ -3,13 +3,37 @@ version: '3.8'
 services:
   db:
     image: postgres:15
+    container_name: postgres_oltp
     restart: always
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: movieflix
     ports:
-      - "5432:5432"
+      - "5434:5432"
+
+  dw:
+    image: postgres:15
+    container_name: postgres_dw
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: movieflix_dw
+    ports:
+      - "5433:5433"
+    volumes:
+      - ./data_warehouse:/docker-entrypoint-initdb.d
+      - ./data_lake:/data_lake  # aqui ficam os CSV
+
+  etl:
+    build: ./etl
+    container_name: etl_service
+    depends_on:
+      - dw
+    volumes:
+      - ./data_lake:/data_lake
+    command: ["sh", "-c", "sleep 15 && node loadAll.js"]
 
   app:
     build: .

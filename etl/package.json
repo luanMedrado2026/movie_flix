@@ -1,0 +1,12 @@
+{
+  "name": "etl-movieflix",
+  "version": "1.0.0",
+  "main": "loadAll.js",
+  "scripts": {
+    "start": "node loadAll.js"
+  },
+  "dependencies": {
+    "csv-parser": "^3.0.0",
+    "pg": "^8.11.0"
+  }
+}
